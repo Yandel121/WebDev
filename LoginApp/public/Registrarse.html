@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Login And Registration - Easy Tutorials</title>
+    <link rel="stylesheet" type="text/css" href="css/login.css">
+</head>
+<body>
+    <div class="hero">
+        <div class="form-box">
+          <div class="button-box">
+            <div id="btn"></div>
+            <button type="button" class="toggle-btn" onclick="login()">Login In</button>
+            <button type="button" class="toggle-btn" onclick="register()">Register</button>
+          </div>
+          <div class="social-icons">
+            <img src="imagene/facebook.png" alt="Facebook">
+            <img src="imagenes/social.png" alst="Instagram">
+            <img src="imagenes/youtube.png" alt="YouTube">
+          </div>
+          <form id="login" class="input-group" method="POST" onsubmit="handleLogin(event)">
+            <input type="text" class="input-field" name="UserId" placeholder="User id" required>
+            <input type="password" class="input-field" name="password" placeholder="Enter Password" required>
+            <input type="checkbox" class="check-box"><span>Remember Password</span>
+            <button type="submit" class="submit-btn">Log in</button>
+            <a href="javascript:window.history.back();" class="back-link">Volver</a>
+          </form>
+          <form id="register" class="input-group" method="POST" action="/register">
+            <input type="text" class="input-field" name="userId" placeholder="User id" required>
+            <input type="email" class="input-field" name="email" placeholder="Enter Email" required>
+            <input type="password" class="input-field" name="password" placeholder="Enter Password" required>
+            <input type="checkbox" class="check-box"><span>I agree to the terms & conditions</span>
+            <button type="submit" class="submit-btn">Register</button>
+        </form>        
+        </div>
+    </div>
+
+    <script>
+        var x = document.getElementById("login");
+        var y = document.getElementById("register");
+        var z = document.getElementById("btn");
+
+        function register(){
+            x.style.left = "-400px";
+            y.style.left = "50px";
+            z.style.left = "110px";
+        }
+        function login(){
+            x.style.left = "50px";
+            y.style.left = "450px";
+            z.style.left = "0px";
+        }
+
+        function handleLogin(event) {
+            event.preventDefault(); // Prevent the default form submission
+
+            // Simulate login validation (replace this with actual backend validation)
+            const userId = document.querySelector('input[name="UserId"]').value;
+            const password = document.querySelector('input[name="password"]').value;
+
+            if (userId === "testUser" && password === "password123") { // Example validation
+                alert("Login successful!");
+                window.location.href = "ProfilePage.html"; // Redirect to the profile page
+            } else {
+                alert("Invalid credentials. Please try again.");
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Profile</title>
+    <link rel="stylesheet" href="/css/profile.css">
+</head>
+<body>
+    <header>
+        <h2>Welcome to Your Profile</h2>
+    </header>
+    <div class="profile-container">
+        <img src="profile.jpg" alt="User Profile Picture" class="profile-pic">
+        <h1 id="username"><%= username %></h1>
+        <p class="bio">Web developer | Tech enthusiast | Coffee lover</p>
+        <div class="info">
+            <p><strong>Email:</strong> <span id="email"><%= email %></span></p>
+            <p><strong>Joined:</strong> <span id="joined-date"><%= joinedDate %></span></p>
+        </div>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+
+    <script>
+        function logout() {
+            alert("Logging out...");
+            window.location.href = "/"; // Redirect to the login page
+        }
+    </script>
+</body>
+</html>
