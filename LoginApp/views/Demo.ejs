@@ -54,16 +54,22 @@
         function handleLogin(event) {
             event.preventDefault(); // Prevent the default form submission
 
-            // Simulate login validation (replace this with actual backend validation)
             const userId = document.querySelector('input[name="UserId"]').value;
             const password = document.querySelector('input[name="password"]').value;
 
-            if (userId === "testUser" && password === "password123") { // Example validation
-                alert("Login successful!");
-                window.location.href = "ProfilePage.html"; // Redirect to the profile page
-            } else {
-                alert("Invalid credentials. Please try again.");
-            }
+            fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ UserId: userId, password: password }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/profile'; // Redirect to the profile page
+                } else {
+                    alert('Invalid credentials. Please try again.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
     </script>
 </body>

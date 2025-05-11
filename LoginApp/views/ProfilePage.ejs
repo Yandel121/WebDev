@@ -11,20 +11,105 @@
         <h2>Welcome to Your Profile</h2>
     </header>
     <div class="profile-container">
-        <img src="profile.jpg" alt="User Profile Picture" class="profile-pic">
+        <img src="/imagenes/profile.png" alt="User Profile Picture" class="profile-pic">
         <h1 id="username"><%= username %></h1>
-        <p class="bio">Web developer | Tech enthusiast | Coffee lover</p>
+        <div class="bio-container" style="margin-top: 20px;">
+            <p id="bio-text"><%= bio %></p> <!-- Static bio text -->
+            <textarea id="bio-edit" style="display: none;" rows="4"><%= bio %></textarea> <!-- Hidden textarea -->
+            <button id="save-bio-btn" style="display: none;" onclick="saveBio()">Save</button> <!-- Save button -->
+            <img src="/imagenes/pencil.png"  alt="Edit" id="edit-bio-icon" style="cursor: pointer; width:30px; height: 30px;" onclick="editBio()"> <!-- Edit icon -->
+        </div>
         <div class="info">
             <p><strong>Email:</strong> <span id="email"><%= email %></span></p>
             <p><strong>Joined:</strong> <span id="joined-date"><%= joinedDate %></span></p>
         </div>
         <button class="logout-btn" onclick="logout()">Logout</button>
+        <form id="delete-account-form" onsubmit="deleteAccount(event)">
+            <button type="submit" class="delete-btn">Delete Account</button>
+        </form>
+    </div>
+
+    <div class="icon-container">
+        <img src="/imagenes/home.png" alt="Home" class="icon" onclick="showContent('home')">
+        <img src="/imagenes/info.png" alt="About" class="icon" onclick="showContent('about')">
+        <img src="/imagenes/phone.png" alt="Contact" class="icon" onclick="showContent('contact')">
+    </div>
+
+    <div class="content-container">
+        <div id="home" class="content active">Welcome to the Home Section!</div>
+        <div id="about" class="content">This is the About Section.</div>
+        <div id="contact" class="content">Get in touch through the Contact Section.</div>
     </div>
 
     <script>
         function logout() {
             alert("Logging out...");
             window.location.href = "/"; // Redirect to the login page
+        }
+
+        function deleteAccount(event) {
+            event.preventDefault();
+
+            fetch('/delete-account', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: '<%= username %>' }) // Pass the username dynamically
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    window.location.href = '/'; // Redirect to the login page
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function editBio() {
+            // Show the textarea and save button, hide the static bio text and edit icon
+            document.getElementById('bio-text').style.display = 'none';
+            document.getElementById('bio-edit').style.display = 'block';
+            document.getElementById('save-bio-btn').style.display = 'inline-block';
+            document.getElementById('edit-bio-icon').style.display = 'none';
+        }
+
+        function saveBio() {
+            const updatedBio = document.getElementById('bio-edit').value;
+
+            fetch('/update-bio', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: '<%= username %>', bio: updatedBio })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert(data.message);
+                    // Update the static bio text and switch back to view mode
+                    document.getElementById('bio-text').textContent = updatedBio;
+                    document.getElementById('bio-text').style.display = 'block';
+                    document.getElementById('bio-edit').style.display = 'none';
+                    document.getElementById('save-bio-btn').style.display = 'none';
+                    document.getElementById('edit-bio-icon').style.display = 'inline-block';
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+
+        function showContent(sectionId) {
+            // Hide all content sections
+            const contents = document.querySelectorAll('.content');
+            contents.forEach(content => {
+                content.classList.remove('active');
+            });
+
+            // Show the selected content section
+            const selectedContent = document.getElementById(sectionId);
+            selectedContent.classList.add('active');
         }
     </script>
 </body>
