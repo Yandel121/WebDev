@@ -34,17 +34,6 @@ app.get('/', function(req, res){
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Servidor corriendo en el puerto ${port}`));
 
-//Obtener todas las tareas
-
-app.get('/tasks', async (req,res) => {
-    try{
-        const pool=await sql.connect(dbConfig);
-        const result= await pool.request().query('SELECT * FROM Tasks');
-        res.json(result.recordset);
-    } catch (error){
-        res.status(500).send(error.message);
-    }
-});
 
 // Register route
 app.post('/register', (req, res) => {
@@ -147,38 +136,6 @@ app.get('/profile', (req, res) => {
     }
 });
 
-// Actualizar tarea
-
-app.put('/tasks/:id', async (req, res)=> {
-    const { id } = req.params;
-    const {title,description,status} =req.body;
-    try{
-        const pool= await sql.connect(dbConfig);
-        await pool.request()
-        .input('id', sql.Int, id)
-        .input('title',sql.VarChar,title)
-        .input('description', sql.VarChar,description)
-        .input('status', sql.VarChar,status)
-        .query('UPDATE Task SET title=@title, description=@description, status=@status WHERE id=@id');
-    res.send('Tarea actualizada exitosamente');
-    } catch (error){
-        res.status(500).send(error.message);
-    }
-});
-
-// Eliminar una tarea
-app.delete('/tasks/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-        const pool = await sql.connect(dbConfig);
-        await pool.request()
-            .input('id', sql.Int, id)
-            .query('DELETE FROM Tasks WHERE id=@id');
-        res.send('Tarea eliminada exitosamente');
-    } catch (error) {
-        res.status(500).send(error.message);
-    }
-});
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 
