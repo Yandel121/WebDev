@@ -111,6 +111,13 @@
             const selectedContent = document.getElementById(sectionId);
             selectedContent.classList.add('active');
         }
+
+        res.render('ProfilePage', {
+            username: userId, // Ensure this is correctly passed
+            email: users[userId].email,
+            bio: users[userId].bio || '', // Default to an empty string if bio is not set
+            joinedDate: new Date().toLocaleDateString(),
+        });
     </script>
 </body>
 </html>
