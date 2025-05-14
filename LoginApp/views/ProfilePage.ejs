@@ -50,17 +50,21 @@
         function deleteAccount(event) {
             event.preventDefault();
 
-            fetch('/delete-account', {
+            const userId = '<%= username %>'; // Dynamically pass the username as userId
+
+            fetch(`/delete-account/${userId}`, {
                 method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: '<%= username %>' }) // Pass the username dynamically
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    alert(data.message);
+            .then(response => {
+                if (response.ok) {
+                    alert('Account deleted successfully');
                     window.location.href = '/'; // Redirect to the login page
-                } else if (data.error) {
+                } else {
+                    return response.json(); // Parse the error response
+                }
+            })
+            .then(data => {
+                if (data && data.error) {
                     alert(data.error);
                 }
             })
@@ -111,6 +115,13 @@
             const selectedContent = document.getElementById(sectionId);
             selectedContent.classList.add('active');
         }
+
+        res.render('ProfilePage', {
+            username: userId, // Ensure this is correctly passed
+            email: users[userId].email,
+            bio: users[userId].bio || '', // Default to an empty string if bio is not set
+            joinedDate: new Date().toLocaleDateString(),
+        });
     </script>
 </body>
 </html>

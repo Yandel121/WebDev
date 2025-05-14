@@ -19,7 +19,7 @@
             <img src="imagenes/youtube.png" alt="YouTube">
           </div>
           <form id="login" class="input-group" method="POST" onsubmit="handleLogin(event)">
-            <input type="text" class="input-field" name="UserId" placeholder="User id" required>
+            <input type="text" class="input-field" name="userId" placeholder="User id" required>
             <input type="password" class="input-field" name="password" placeholder="Enter Password" required>
             <input type="checkbox" class="check-box"><span>Remember Password</span>
             <button type="submit" class="submit-btn">Log in</button>
@@ -54,13 +54,13 @@
         function handleLogin(event) {
             event.preventDefault(); // Prevent the default form submission
 
-            const userId = document.querySelector('input[name="UserId"]').value;
+            const userId = document.querySelector('input[name="userId"]').value; // Updated to match the back-end
             const password = document.querySelector('input[name="password"]').value;
 
             fetch('/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ UserId: userId, password: password }),
+                body: JSON.stringify({ userId: userId, password: password }), // Updated to match the back-end
             })
             .then(response => {
                 if (response.ok) {

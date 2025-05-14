@@ -1,182 +1,250 @@
 const express = require('express');
-const bodyParser = require('body-parser');
-const dotenv = require('dotenv');
-const sql = require('mssql');
 const path = require('path');
-
-dotenv.config();
+const { connectDB, config } = require('./config');
+const sql = require('mssql');
 const app = express();
+const port = process.env.PORT || 3000;
+
+// Initialize express app
+const session = require('express-session');
+
+app.use(session({
+    secret: 'your_secret_key',
+    resave: false,
+    saveUninitialized: true,
+}));
+
+
+// Establish database connection
+connectDB();
 
 // Middleware
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true })); // Add this line
+app.use(express.json()); // Parse JSON bodies
+app.use(express.urlencoded({ extended: true })); // Parse URL-encoded bodies
+
+// View Engine Setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
 
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Database configuration
-const dbConfig = {
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    server: process.env.DB_SERVER,
-    database: process.env.DB_NAME,
-};
+// Routes
 
-// View Engine Setup 
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'ejs');
-  
-app.get('/', function(req, res){ 
-    res.render('Demo') 
-}) 
+// Home route
+app.get('/', (req, res) => {
+    res.render('Demo');
+});
 
-// Start the server
-const port = process.env.PORT || 3000;
-app.listen(port, () => console.log(`Servidor corriendo en el puerto ${port}`));
+// Test database connection
+app.get('/test-db', async (req, res) => {
+    try {
+        const pool = await sql.connect(config);
+        await pool.query('SELECT 1'); // Simple query to test the connection
+        res.send('Database connection successful!');
+    } catch (error) {
+        console.error('Database connection failed:', error.message);
+        res.status(500).send('Database connection failed: ' + error.message);
+    }
+});
 
-
-// Register route
-app.post('/register', (req, res) => {
+app.post('/register', async (req, res) => {
     const { userId, email, password } = req.body;
+
     if (!userId || !email || !password) {
         return res.status(400).send('All fields are required.');
     }
 
-    // Add the user to the simulated database
-    users[userId] = { password, email, bio: '', deleted: false };
+    try {
+        const pool = await sql.connect(config);
+        await pool.request()
+            .input('userId', sql.NVarChar, userId)
+            .input('email', sql.NVarChar, email)
+            .input('password', sql.NVarChar, password)
+            .query('INSERT INTO Users (userId, email, password) VALUES (@userId, @email, @password)');
 
-    // Pass user data to the profile page
+        // ✅ Store user in session before redirecting
+        req.session.user = { userId, email }; // Add user to session
+        console.log('User stored in session:', req.session.user);
+
+        // ✅ Redirect to profile page after successful registration
+        res.redirect('/profile');
+    } catch (error) {
+        console.error('Error:', error.message);
+        res.status(500).send(error.message);
+    }
+});
+
+
+
+
+// Login route
+// 🚀 **Login Route**
+app.post('/login', async (req, res) => {
+    console.log('Login request:', req.body);
+
+    const { userId, password } = req.body;
+
+    if (!userId || !password) {
+        return res.status(400).send('UserId and password are required.');
+    }
+
+    try {
+        const pool = await sql.connect(config);
+
+        // Fetch user without filtering by password
+        const result = await pool.request()
+            .input('userId', sql.NVarChar, userId)
+            .query('SELECT * FROM Users WHERE userId = @userId AND deleted = 0');
+
+        console.log('User Data:', result.recordset); // Debugging output
+
+        if (result.recordset.length > 0) {
+            const user = result.recordset[0];
+
+            console.log('User ID:', user.userId);
+            console.log('Database Password:', user.password);
+            console.log('Input Password:', password);
+
+            // 🔎 **Compare passwords**
+            if (user.password.trim() === password.trim()) {
+                req.session.user = user; // ✅ Store user in session
+                console.log('User stored in session:', req.session.user);
+
+                res.redirect('/profile'); // Redirect after successful login
+            } else {
+                res.status(401).send('Invalid credentials');
+            }
+        } else {
+            res.status(404).send('User not found');
+        }
+    } catch (error) {
+        console.error('Login API Error:', error.message);
+        res.status(500).send(error.message);
+    }
+});
+// 🚀 **Profile Route**
+app.get('/profile', async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).send('User not authenticated');
+    }
+
+    console.log('Fetching profile for session:', req.session.user);
+
+    const user = req.session.user;
+
+    let formattedDate = 'Unknown';
+    if (user.createdAt) {
+        try {
+            formattedDate = new Date(user.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        } catch (error) {
+            console.error('Date conversion error:', error);
+        }
+    }
+
     res.render('ProfilePage', {
-        username: userId, // Ensure this is correctly passed
-        email: users[userId].email,
-        bio: users[userId].bio || '', // Default to an empty string if bio is not set
-        joinedDate: new Date().toLocaleDateString(),
+        username: user.userId,
+        email: user.email,
+        bio: user.bio || 'No bio available',
+        joinedDate: formattedDate,
     });
 });
 
-// Simulated database for user accounts
-const users = {
-    testUser: { password: '', email: '', bio: '', deleted: false },
-};
 
-// Delete account route
-app.delete('/delete-account', (req, res) => {
-    const { username } = req.body;
-
-    if (users[username]) {
-        users[username].deleted = true;
-        res.status(200).json({ message: 'Account deleted successfully' });
-    } else {
-        res.status(404).json({ error: 'User not found' });
-    }
-});
-
-// Updated login route
-app.post('/login', (req, res) => {
-    const { UserId, password } = req.body;
-
-    // Check if the user exists and is not deleted
-    if (users[UserId] && !users[UserId].deleted && users[UserId].password === password) {
-        // Pass user data to the profile page
-        res.render('ProfilePage', {
-            username: UserId,
-            email: users[UserId].email,
-            bio: users[UserId].bio, // Include bio
-            joinedDate: 'March 2025', // Example joined date
-        });
-    } else if (users[UserId] && users[UserId].deleted) {
-        res.status(403).send('This account has been deleted.');
-    } else {
-        res.status(401).send('Invalid credentials');
-    }
-});
 
 // Create bio route
-app.post('/create-bio', (req, res) => {
+app.post('/create-bio', async (req, res) => {
     const { username, bio } = req.body;
 
-    if (users[username]) {
-        if (users[username].bio) {
-            return res.status(400).json({ error: 'Bio already exists. Use the update API to modify it.' });
+    if (!username || !bio) {
+        return res.status(400).json({ error: 'Username and bio are required.' });
+    }
+
+    try {
+        const pool = await sql.connect(config);
+        const result = await pool.request()
+            .input('userId', sql.NVarChar, username)
+            .query('SELECT * FROM Users WHERE userId = @userId AND deleted = 0');
+
+        if (result.recordset.length > 0) {
+            const user = result.recordset[0];
+            if (user.bio) {
+                return res.status(400).json({ error: 'Bio already exists. Use the update API to modify it.' });
+            }
+
+            await pool.request()
+                .input('userId', sql.NVarChar, username)
+                .input('bio', sql.NVarChar, bio)
+                .query('UPDATE Users SET bio = @bio WHERE userId = @userId');
+            res.status(201).json({ message: 'Bio created successfully' });
+        } else {
+            res.status(404).json({ error: 'User not found' });
         }
-        users[username].bio = bio;
-        res.status(201).json({ message: 'Bio created successfully' });
-    } else {
-        res.status(404).json({ error: 'User not found' });
+    } catch (error) {
+        console.error('Error:', error.message);
+        res.status(500).json({ error: error.message });
     }
 });
 
 // Update bio route
-app.put('/update-bio', (req, res) => {
+app.put('/update-bio', async (req, res) => {
     const { username, bio } = req.body;
 
-    if (users[username]) {
-        // If bio does not exist, create it
-        users[username].bio = bio;
-        res.status(200).json({ message: 'Bio updated successfully' });
-    } else {
-        res.status(404).json({ error: 'User not found' });
+    if (!username || !bio) {
+        return res.status(400).send('Username and bio are required.');
     }
-});
 
-// Render profile page with updated bio
-app.get('/profile', (req, res) => {
-    const username = 'testUser'; // Replace with session or actual user data
+    try {
+        const pool = await sql.connect(config);
+        const result = await pool.request()
+            .input('userId', sql.NVarChar, username)
+            .query('SELECT * FROM Users WHERE userId = @userId AND deleted = 0');
 
-    // Check if the user exists
-    if (users[username]) {
-        res.render('ProfilePage', {
-            username: username,
-            email: users[username].email,
-            bio: users[username].bio, // Include bio
-            joinedDate: 'March 2025', // Example joined date
-        });
-    } else {
-        res.status(404).send('User not found');
-    }
-});
-
-
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
-
-fetch(`${BASE_URL}/create-bio`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: '', bio: '' }),
-})
-    .then(response => response.json())
-    .then(data => console.log(data))
-    .catch(error => console.error('Error:', error));
-
-fetch('http://localhost:3000/update-bio', {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username: 'testUser', bio: 'Updated bio' }),
-})
-    .then(response => response.json())
-    .then(data => console.log(data))
-    .catch(error => console.error('Error:', error));
-
-function saveBio() {
-    const updatedBio = document.getElementById('bio-edit').value;
-
-    fetch('/update-bio', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: '<%= username %>', bio: updatedBio })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.message) {
-            alert(data.message);
-            document.getElementById('bio-text').textContent = updatedBio;
-            document.getElementById('bio-text').style.display = 'block';
-            document.getElementById('bio-edit').style.display = 'none';
-            document.getElementById('save-bio-btn').style.display = 'none';
-            document.getElementById('edit-bio-icon').style.display = 'inline-block';
-        } else if (data.error) {
-            alert(data.error);
+        if (result.recordset.length > 0) {
+            await pool.request()
+                .input('userId', sql.NVarChar, username)
+                .input('bio', sql.NVarChar, bio)
+                .query('UPDATE Users SET bio = @bio WHERE userId = @userId');
+            res.status(200).json({ message: 'Bio updated successfully' });
+        } else {
+            res.status(404).json({ error: 'User not found' });
         }
-    })
-    .catch(error => console.error('Error:', error));
-}
+    } catch (error) {
+        console.error('Error:', error.message);
+        res.status(500).send(error.message);
+    }
+});
+
+
+
+// Delete account route
+app.delete('/delete-account/:userId', async (req, res) => {
+    const { userId } = req.params; // Correctly destructure userId
+
+    try {
+        const pool = await sql.connect(config);
+        const result = await pool.request()
+            .input('userId', sql.NVarChar, userId)
+            .query('UPDATE Users SET deleted = 1 WHERE userId = @userId');
+
+        if (result.rowsAffected[0] === 0) {
+            return res.status(404).send('User not found');
+        }
+
+        res.status(200).send('Account marked as deleted successfully');
+    } catch (error) {
+        console.error('Error:', error.message);
+        res.status(500).send(error.message);
+    }
+});
+
+// Start the server
+app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+});
+
+body: JSON.stringify({ username: '<%= username %>' }) // Ensure <%= username %> is rendered correctly
