@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Login And Registration - Easy Tutorials</title>
-    <link rel="stylesheet" type="text/css" href="css/login.css">
+    <link rel="stylesheet" type="text/css" href="/css/login.css">
 </head>
 <body>
     <div class="hero">
@@ -14,12 +14,12 @@
             <button type="button" class="toggle-btn" onclick="register()">Register</button>
           </div>
           <div class="social-icons">
-            <img src="imagene/facebook.png" alt="Facebook">
-            <img src="imagenes/social.png" alst="Instagram">
+            <img src="imagenes/facebook.png" alt="Facebook">
+            <img src="imagenes/social.png" alt="Instagram">
             <img src="imagenes/youtube.png" alt="YouTube">
           </div>
           <form id="login" class="input-group" method="POST" onsubmit="handleLogin(event)">
-            <input type="text" class="input-field" name="UserId" placeholder="User id" required>
+            <input type="text" class="input-field" name="userId" placeholder="User id" required>
             <input type="password" class="input-field" name="password" placeholder="Enter Password" required>
             <input type="checkbox" class="check-box"><span>Remember Password</span>
             <button type="submit" class="submit-btn">Log in</button>
@@ -54,16 +54,22 @@
         function handleLogin(event) {
             event.preventDefault(); // Prevent the default form submission
 
-            // Simulate login validation (replace this with actual backend validation)
-            const userId = document.querySelector('input[name="UserId"]').value;
+            const userId = document.querySelector('input[name="userId"]').value; // Updated to match the back-end
             const password = document.querySelector('input[name="password"]').value;
 
-            if (userId === "testUser" && password === "password123") { // Example validation
-                alert("Login successful!");
-                window.location.href = "ProfilePage.html"; // Redirect to the profile page
-            } else {
-                alert("Invalid credentials. Please try again.");
-            }
+            fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: userId, password: password }), // Updated to match the back-end
+            })
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/profile'; // Redirect to the profile page
+                } else {
+                    alert('Invalid credentials. Please try again.');
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
     </script>
 </body>
